@@ -1,0 +1,43 @@
+name: Sync strSniffer.py to FullToolz/FTz
+
+on:
+  push:
+    paths:
+      - 'strSniffer.py'        # run only when this file changes
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo (this repo)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Checkout target repo (FullToolz/FTZ)
+        uses: actions/checkout@v4
+        with:
+          repository: FullToolz/FTZ
+          token: ${{ secrets.REPO_SYNC_PAT }}   # PAT with push access to FullToolz/HexoRat
+          path: target-repo
+
+      - name: Copy file to target repo
+        run: |
+          mkdir -p target-repo/files
+          cp strSniffer.py target-repo/files/strSniffer.py
+
+      - name: Commit & push if changed
+        run: |
+          cd target-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git status --porcelain | grep -q '.'; then
+            git add files/strSniffer.py
+            git commit -m "Sync strSniffer.py from ${GITHUB_REPOSITORY}@${GITHUB_SHA::7}"
+            git push origin HEAD:main
+            echo "Pushed changes to FullToolz/FTZ"
+          else
+            echo "No changes to commit"
+          fi
